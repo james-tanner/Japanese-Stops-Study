@@ -27,3 +27,6 @@ df = pd.merge(df, speakers, how = 'left', left_on = 'speaker', right_on = 'speak
 ## Add word/trial information
 words = pd.read_excel('../data/JapaneseVOTdata_2020NOV20/TestWords_2020NOV20.xlsx')
 df = pd.merge(df, words, how = 'left', left_on = ['utterance_label', 'speaker_trial'], right_on = ['label(order_in_a_trial)', 'trial'])
+
+## write CSV to file
+df.to_csv('../data/JP_STOPS_DATA.csv')
