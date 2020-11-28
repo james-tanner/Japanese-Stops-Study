@@ -203,4 +203,4 @@ df = pd.merge(df, words, how = 'left', left_on = ['utterance_label', 'speaker_tr
 
 print("Files to fix: {}".format(to_fix))
 ## write the CSV to file
-# df.to_csv(args.OutputFile, index = False)
+df.to_csv(args.OutputFile, index = False)
