@@ -3,9 +3,11 @@
 ## November 2020
 
 import os
+import re
 import textgrid
 import argparse
 import pandas as pd
+import numpy as np
 
 ## Process command line arguments:
 ## directory containing TextGrids
@@ -146,6 +148,7 @@ def processfile(dir, file):
 			rows = ([makeRow(os.path.splitext(file)[0], utterance, segments, release, voicing) for utterance in utt[0]])
 		except IndexError:
 			print("{} is broken".format(file))
+			to_fix.append(file)
 
 	return(rows)
 
@@ -153,6 +156,7 @@ df = pd.DataFrame(columns = ['name', 'utterance_label', 'utterance_start', 'utte
 							 'C1_start', 'C1_end', 'V1_start', 'V1_end', 'C2_start',
 							 'C2_end', 'V2_start', 'V2_end', 'release', 'voicing'])
 
+to_fix = []
 rows = [processfile(args.inputDir, file) for file in os.listdir(args.inputDir)]
 
 ## since this returns a multi-embedded list,
@@ -171,5 +175,32 @@ for obs in observations:
 	if obs['utterance_label'] != "":
 		df = df.append(obs, ignore_index = True)
 
+print("Adding metadata columns...")
+
+## force types
+df['name'] = df['name'].astype(np.object)
+df['utterance_label'] = df['utterance_label'].astype(np.int)
+df['utterance_start'] = df['utterance_start'].astype(np.float)
+df['utterance_end'] = df['utterance_end'].astype(np.float)
+
+## split ID into name and trial number
+df[['speaker', 'speaker_trial']] = df['name'] \
+	.apply(lambda x : re.match("(.*)(\d)", x).groups()) \
+	.apply(pd.Series)
+
+df['speaker_trial'] = df['speaker_trial'].astype(np.int)
+
+## Add speakers first
+speakers = pd.read_excel('../data/JapaneseVOTdata_2020NOV20/subject_infomation_2020NOV20.xls')
+df = pd.merge(df, speakers, how = 'left', left_on = 'speaker', right_on = 'speaker_id')
+
+## Add word/trial information
+words = pd.read_excel('../data/JapaneseVOTdata_2020NOV20/TestWords_2020NOV20.xlsx')
+
+## rename voicing column
+words = words.rename(columns = {'voicing' : 'phone_voicing'})
+df = pd.merge(df, words, how = 'left', left_on = ['utterance_label', 'speaker_trial'], right_on = ['label(order_in_a_trial)', 'trial'])
+
+print("Files to fix: {}".format(to_fix))
 ## write the CSV to file
-df.to_csv(args.OutputFile, index = False)
+# df.to_csv(args.OutputFile, index = False)
