@@ -17,7 +17,7 @@ audioDir = '../data/JapaneseVOTdata_2020NOV20/sound/'
 df = pd.read_csv('../data/JP_STOPS_DATA.csv')
 
 ## calculate VOT as voicing - release
-df['VOT'] =  df['voicing_x'] - df['release']
+df['VOT'] =  df['voicing'] - df['release']
 
 ## make acoustic measurement columns
 df['F0'] = np.nan
@@ -31,14 +31,14 @@ print("Processing {} tokens across {} files".format(len(df), len(files)))
 def getF0(pitchobj, ppobj, t):
 
 	## find the glottal pulse closed to the annotated voicing
-	nearest_pulse = parselmouth.praat.call(ppobj, "Get low index", t)
+	nearest_pulse = parselmouth.praat.call(ppobj, "Get nearest index", t)
 	pulse_time = parselmouth.praat.call(ppobj, "Get time from index", nearest_pulse)
 
 	F0 = pitchobj.get_value_at_time(pulse_time)
 
 	return F0
 
-for f in files:
+for i, f in enumerate(files):
 
 	## read sound file
 	fileBegin = time.time()
@@ -50,7 +50,8 @@ for f in files:
 			continue
 
 	sound = parselmouth.Sound(os.path.join(audioDir, fileName))
-	print("Processing {} ({} tokens)".format(f, len(df[df['name'] == f])), end = " ")
+	print("Processing {} ({}/{}; {} tokens)".format(
+	    f, i + 1, len(files), len(df[df['name'] == f])), end = " ")
 
 	## make gender-specific pitch tracks based on recommendations in Eager (2015):
 	## specifically, [70,250] for males and [100,300] for females
@@ -76,7 +77,7 @@ for f in files:
 
 	## start measuring individual tokens
 	for index, row in df.iterrows():
-		if row['name'] == "acmry2":
+		if row['name'] == f:
 
 			## get F0 for the token
 			df.loc[index, 'F0'] = getF0(pitch, pulses, row['voicing'])
