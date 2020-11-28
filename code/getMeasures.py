@@ -39,21 +39,30 @@ def getF0(pitchobj, ppobj, t):
 
 for file in files:
 		
-	print("Processing: {} ({} tokens)...".format(file, len(df[df['name'] == file])), end = " ")
+	print("Processing {} ({} tokens)".format(file, len(df[df['name'] == file])), end = " ")
 
 	## read sound file
 	fileBegin = time.time()
-	sound = parselmouth.Sound(os.path.join(audio, file + ".wav"))
+	sound = parselmouth.Sound(os.path.join(audio, file + ".WAV"))
 
 	## make gender-specific pitch tracks based on recommendations in Eager (2015):
 	## specifically, [70,250] for males and [100,300] for females
+	to_fix = []
 	gender = np.unique(df[df['name'] == file]['gender'].values)[0]
-	if gender == 'm':
-		pitch = sound.to_pitch_cc(time_step = 0.001, pitch_floor = 70.00, pitch_ceiling = 250.00)
-	elif gender == 'f':
-		pitch = sound.to_pitch_cc(time_step = 0.001, pitch_floor = 100.00, pitch_ceiling = 300.00)
-	else:
-		raise Exception("No speaker gender!")
+	try:
+	    if gender == 'm':
+		    pitch_floor, pitch_ceiling = 70.00, 250.00
+	    elif gender == 'f':
+		    pitch_floor, pitch_ceiling = 100.00, 300.00
+	    else:
+		    raise Exception("No speaker gender!")
+	except:
+	    print("No speaker gender for {} -- skipping".format(file))
+	    to_fix.append(file)
+
+	pitch = sound.to_pitch_cc(time_step = 0.001,
+				  pitch_floor = pitch_floor,
+				  pitch_ceiling = pitch_ceiling)
 
 	## make PointProcess object
 	pulses = parselmouth.praat.call([sound, pitch], "To PointProcess (cc)")
@@ -66,8 +75,9 @@ for file in files:
 			df.loc[index, 'F0'] = getF0(pitch, pulses, row['voicing_x'])
 
 	fileEnd = time.time()
-	print("Took {} seconds".format(round(fileEnd - fileBegin, 2)))
+	print("took {} seconds".format(round(fileEnd - fileBegin, 2)))
 
 end = time.time()
 print("Total time: {} minutes".format(round((end - begin)/60, 2)))
+print("Files to fix: {}".format(to_fix))
 
