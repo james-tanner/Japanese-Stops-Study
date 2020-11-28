@@ -6,11 +6,12 @@ import pandas as pd
 import numpy as np
 import parselmouth
 import os
+import re
 import time
 
 begin = time.time()
 ## path to the audio files
-audio = '../data/JapaneseVOTdata_2020NOV20/sound/'
+audioDir = '../data/JapaneseVOTdata_2020NOV20/sound/'
 
 ## read dataset
 df = pd.read_csv('../data/JP_STOPS_DATA.csv')
@@ -37,18 +38,24 @@ def getF0(pitchobj, ppobj, t):
 
 	return F0
 
-for file in files:
-		
-	print("Processing {} ({} tokens)".format(file, len(df[df['name'] == file])), end = " ")
+for f in files:
 
 	## read sound file
 	fileBegin = time.time()
-	sound = parselmouth.Sound(os.path.join(audio, file + ".WAV"))
+
+	for audioFile in os.listdir(audioDir):
+		try:
+			fileName = re.findall(f + "\.[wav|WAV]+", audioFile)[0]
+		except IndexError:
+			continue
+
+	sound = parselmouth.Sound(os.path.join(audioDir, fileName))
+	print("Processing {} ({} tokens)".format(f, len(df[df['name'] == f])), end = " ")
 
 	## make gender-specific pitch tracks based on recommendations in Eager (2015):
 	## specifically, [70,250] for males and [100,300] for females
 	to_fix = []
-	gender = np.unique(df[df['name'] == file]['gender'].values)[0]
+	gender = np.unique(df[df['name'] == f]['gender'].values)[0]
 	try:
 	    if gender == 'm':
 		    pitch_floor, pitch_ceiling = 70.00, 250.00
@@ -57,8 +64,8 @@ for file in files:
 	    else:
 		    raise Exception("No speaker gender!")
 	except:
-	    print("No speaker gender for {} -- skipping".format(file))
-	    to_fix.append(file)
+	    print("No speaker gender for {} -- skipping".format(f))
+	    to_fix.append(f)
 
 	pitch = sound.to_pitch_cc(time_step = 0.001,
 				  pitch_floor = pitch_floor,
@@ -72,7 +79,7 @@ for file in files:
 		if row['name'] == "acmry2":
 
 			## get F0 for the token
-			df.loc[index, 'F0'] = getF0(pitch, pulses, row['voicing_x'])
+			df.loc[index, 'F0'] = getF0(pitch, pulses, row['voicing'])
 
 	fileEnd = time.time()
 	print("took {} seconds".format(round(fileEnd - fileBegin, 2)))
