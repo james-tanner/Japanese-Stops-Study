@@ -21,6 +21,8 @@ df['VOT'] =  df['voicing'] - df['release']
 
 ## make acoustic measurement columns
 df['F0'] = np.nan
+df['file_amplitude'] = np.nan
+df['burst_amplitude'] = np.nan
 
 ## start processing files
 ## since measurement requires generating pitch process objects for each file,
@@ -72,6 +74,11 @@ for i, f in enumerate(files):
 				  pitch_floor = pitch_floor,
 				  pitch_ceiling = pitch_ceiling)
 
+	## generate an intensity object and get the average
+	## intensity for the whole file
+	intensity = sound.to_intensity(minimum_pitch = pitch_floor)
+	file_intensity = parselmouth.praat.call(intensity, "Get mean", sound.start_time, sound.end_time)
+
 	## make PointProcess object
 	pulses = parselmouth.praat.call([sound, pitch], "To PointProcess (cc)")
 
@@ -81,6 +88,11 @@ for i, f in enumerate(files):
 
 			## get F0 for the token
 			df.loc[index, 'F0'] = getF0(pitch, pulses, row['voicing'])
+
+			## add file-average intensity as well
+			## as intensity for the point of release
+			df.loc[index, 'file_amplitude'] = file_intensity
+			do.loc[index, 'burst_amplitude'] = intensity.get_value(row['release'])
 
 	fileEnd = time.time()
 	print("took {} seconds".format(round(fileEnd - fileBegin, 2)))
