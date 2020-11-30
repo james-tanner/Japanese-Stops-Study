@@ -92,7 +92,7 @@ for i, f in enumerate(files):
 			## add file-average intensity as well
 			## as intensity for the point of release
 			df.loc[index, 'file_amplitude'] = file_intensity
-			do.loc[index, 'burst_amplitude'] = intensity.get_value(row['release'])
+			df.loc[index, 'burst_amplitude'] = intensity.get_value(row['release'])
 
 	fileEnd = time.time()
 	print("took {} seconds".format(round(fileEnd - fileBegin, 2)))
@@ -101,3 +101,4 @@ end = time.time()
 print("Total time: {} minutes".format(round((end - begin)/60, 2)))
 print("Files to fix: {}".format(to_fix))
 
+df.to_csv('../data/JP_STOP_MEASURES.csv')
