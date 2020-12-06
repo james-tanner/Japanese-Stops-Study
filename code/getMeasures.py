@@ -62,7 +62,7 @@ def makeVowelSound(sound, start, end):
 def getFormantValues(sound, gender, mid):
 
 	## set gender-specific reference values
-	if gender == "M":
+	if gender == "m":
 		maxf = 5000
 		f1ref = 500
 		f2ref = 1485
@@ -93,13 +93,15 @@ def getVoiceQuality(sound, mid, pfloor, pceiling, f1, f2, f3):
 	## interpolate pitch
 	ExtractedPitch = ExtractedPitch.interpolate()
 
+	ExtractedPointProcess = parselmouth.praat.call([sound, ExtractedPitch], "To PointProcess (cc)")
+
 	## generate spectrum
 	ExtractedSpectrum = ExtractedSound.to_spectrum()
 	ltas = parselmouth.praat.call(ExtractedSpectrum, "To Ltas (1-to-1)")
 
 	## try calculating F0
 	try:
-		F0mid = round(ExtractedPitch.get_value_at_time(time = mid))
+		F0mid = getF0(ExtractedPitch, ExtractedPointProcess, mid)
 		p10_F0mid = F0mid/10
 
 		lowerbh1 = F0mid - p10_F0mid
@@ -200,9 +202,7 @@ for i, f in enumerate(files):
 			F1, F2, F3 = getFormantValues(ExtractedSound, gender, V1_mid)
 
 			df.loc[index, 'h1mnh2'], df.loc[index, 'h1mna3'] = getVoiceQuality(ExtractedSound,
-				V1_mid,
-				pitch_floor,
-				pitch_ceiling,
+				V1_mid, pitch_floor, pitch_ceiling,
 				F1, F2, F3)
 
 	fileEnd = time.time()
