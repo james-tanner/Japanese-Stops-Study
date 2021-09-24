@@ -101,7 +101,7 @@ def getVoiceQuality(sound, mid, pfloor, pceiling, f1, f2, f3):
 
 	## try calculating F0
 	try:
-		F0mid = getF0(ExtractedPitch, ExtractedPointProcess, mid)
+		F0mid = ExtractedPitch.get_value_at_time(mid)
 		p10_F0mid = F0mid/10
 
 		lowerbh1 = F0mid - p10_F0mid
@@ -138,10 +138,14 @@ def getVoiceQuality(sound, mid, pfloor, pceiling, f1, f2, f3):
 		h1mna3 = h1db - a3db
 
 	except Exception as e:
+		print(f"Voice quality extraction failed. Reason: {e}")
+		F0mid = np.nan
 		h1mnh2 = np.nan
 		h1mna3 = np.nan
 
-	return (h1mnh2, h1mna3)
+	print(F0mid, h1mnh2, h1mna3)
+
+	return (F0mid, h1mnh2, h1mna3)
 
 for i, f in enumerate(files):
 
@@ -190,7 +194,7 @@ for i, f in enumerate(files):
 		if row['name'] == f:
 
 			## get F0 for the token
-			df.loc[index, 'f0'] = getF0(pitch, pulses, row['voicing'])
+			# df.loc[index, 'f0'] = getF0(pitch, pulses, row['voicing'])
 
 			## add file-average intensity as well
 			## as intensity for the point of release
@@ -201,7 +205,7 @@ for i, f in enumerate(files):
 			V1_mid, ExtractedSound = makeVowelSound(sound, row['V1_start'], row['V1_end'])
 			F1, F2, F3 = getFormantValues(ExtractedSound, gender, V1_mid)
 
-			df.loc[index, 'h1mnh2'], df.loc[index, 'h1mna3'] = getVoiceQuality(ExtractedSound,
+			df.loc[index, 'f0'], df.loc[index, 'h1mnh2'], df.loc[index, 'h1mna3'] = getVoiceQuality(ExtractedSound,
 				V1_mid, pitch_floor, pitch_ceiling,
 				F1, F2, F3)
 
